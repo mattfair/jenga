@@ -1,6 +1,7 @@
 (library
  ((name oUnit) (packed false)
   (flags (:standard \ -strict-sequence))
-  (extra_disabled_warnings (32))
-  (modules (list (oUnit)))
+  (extra_disabled_warnings (32 27 9 28 39 33))
+  (modules (All))
   (preprocess (((pps ()) All)))))
+

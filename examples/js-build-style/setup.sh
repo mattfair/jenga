@@ -32,7 +32,7 @@ if [ ! -x packages ]; then
     mkdir packages
     (cd packages; for x in $js_packages; do git clone https://github.com/janestreet/$x; done)
     (cd packages; git clone https://github.com/vincenthz/ocaml-inotify)
-    (cd packages; git clone https://github.com/warrenharris/ounit)
+    (cd packages; darcs get http://darcs.ocamlcore.org/repos/ounit)
     (cd packages; hg init; hg ci -Aqm init)
 fi
 
