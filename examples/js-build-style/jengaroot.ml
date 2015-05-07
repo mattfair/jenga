@@ -270,7 +270,7 @@ module Ocaml_version = struct
   let root = home ^ "/.opam"
 
   let __name = "4.02.0+trunk"
-  let name = "4.01.0"
+  let name = "system"
 
   let disabled_warnings =
     (* Below are the warnings, as reported by -warn-help.  Warnings 40 and beyond are
