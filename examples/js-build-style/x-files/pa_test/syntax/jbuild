@@ -1,4 +1,4 @@
 (preprocessor
  ((name pa_test)
-  (libraries (pa_type_conv))
+  (libraries (pa_type_conv pa_here))
   (preprocess (((command "camlp4orf") (List (pa_test)))))))

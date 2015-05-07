@@ -1,4 +1,6 @@
 (library
  ((name async_unix)
+  (c_names (dump_core_on_job_delay_stubs))
   (libraries (core async_kernel))
+  (includes (../../core_kernel/lib/))
   (preprocess (((pps (JANE pa_macro)) All)))))

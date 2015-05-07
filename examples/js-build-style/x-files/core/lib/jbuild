@@ -15,14 +15,14 @@ config/discover.sh ${OCAMLC} lib/core_config.mlh lib/core_config.h -DLINUX_EXT -
     ;;version_util_fallback
 ))
   (interfaces (core_kernel))
-  (extra_cflags (-D_LARGEFILE64_SOURCE))
+  (extra_cflags (-D_LARGEFILE64_SOURCE -Wno-unused-local-typedefs))
   ;; We omit [-pedantic] because
   ;; [bigstring_recvmmsg_assume_fd_is_nonblocking_stub] in
   ;; bigstring_stubs.c uses variable-length arrays rather than [alloca].
   (avoid_cflags (-pedantic))
   (library_flags (-cclib -lrt))
   (c_names
-   (backtrace_stubs
+   (
     bigstring_stubs
     crc_stubs
     iobuf_stubs

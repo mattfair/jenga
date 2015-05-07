@@ -10,6 +10,7 @@
 
 (library
  ((name core_kernel)
+  (ocamllex (hex_lexer))
   (libraries
    (bin_prot
     fieldslib
@@ -34,6 +35,8 @@
     exn_stubs
     hash_stubs
     heap_block_stubs
-    int_math_stubs))
+    int_math_stubs
+    time_ns_stubs
+   ))
   (preprocess (((pps (JANE pa_macro)) All)))
   (preprocessor_deps (config.mlh))))
