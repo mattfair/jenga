@@ -1,6 +1,6 @@
 
 open Core.Std
-open No_polymorphic_compare let _ = _squelch_unused_module_warning_
+open! No_polymorphic_compare
 open Async.Std
 module Log = Async.Std.Log
 
@@ -15,6 +15,7 @@ let build_system_message_tag =
 module Q : sig
 
   val shell_escape : string -> string
+  val shell_escape_list : string list -> string
 
 end = struct
 
@@ -51,6 +52,9 @@ end = struct
       (* does not need quoting *)
       s
 
+  let shell_escape_list l =
+    String.concat ~sep:" " (List.map l ~f:(fun x -> shell_escape x))
+
 end
 
 let split_string_into_lines s =
@@ -79,7 +83,6 @@ module Job_start = struct
   type t = {
     uid : int;
     need : string;
-    stdout_expected : bool;
     where : string;
     prog : string;
     args : string list;
@@ -106,7 +109,7 @@ module Job_summary = struct
   with bin_io, sexp_of
 
   let output_with ~put (
-    {Job_start. where; need; stdout_expected=_; prog; args; uid=_},
+    {Job_start. where; need; prog; args; uid=_},
     {Job_finish. outcome; duration},
     {Job_output. stdout; stderr}
   ) =
@@ -152,7 +155,6 @@ module Event = struct
   | Transient of string
   | Load_jenga_root of Path.t * string list
   | Load_jenga_root_done of Path.t * Time.Span.t
-  | Load_sexp_error of Path.Rel.t * [`loc of int * int] * exn
   | Errors_for_omake_server of Path.t * Err.t list
   | Job_started of Job_start.t
   | Job_completed of Job_summary.t
@@ -226,17 +228,14 @@ let load_jenga_root path ~modules =
 let load_jenga_root_done path span =
   T.dispatch the_log (Event.Load_jenga_root_done (path,span))
 
-let load_sexp_error path ~loc exn =
-  T.dispatch the_log (Event.Load_sexp_error (path,`loc loc, exn))
-
 let errors_for_omake_server path errs =
   T.dispatch the_log (Event.Errors_for_omake_server (path,errs))
 
 let job_started =
   let genU = (let r = ref 1 in fun () -> let u = !r in r:=1+u; u) in
-  fun ~need ~stdout_expected ~where ~prog ~args ->
+  fun ~need ~where ~prog ~args ->
   let uid = genU() in
-  let started = { Job_start. uid; need; stdout_expected; where; prog; args } in
+  let started = { Job_start. uid; need; where; prog; args } in
   let event = Event.Job_started started in
   T.dispatch the_log event;
   started
@@ -321,8 +320,8 @@ let omake_style_logger config event =
 
   let put_trans s =
     if dont_emit_kill_line()
-    then Printf.printf "%s%s\r%!" elapsed s
-    else Printf.printf "\027[K%s%s\r%!" elapsed s
+    then Core.Std.Printf.printf "%s%s\r%!" elapsed s
+    else Core.Std.Printf.printf "\027[K%s%s\r%!" elapsed s
   in
 
   let redisplay_transient() =
@@ -333,13 +332,13 @@ let omake_style_logger config event =
 
   let put s =
     if dont_emit_kill_line()
-    then Printf.printf "%s%s\n%!" elapsed s
-    else Printf.printf "\027[K%s%s\n%!" elapsed s
+    then Core.Std.Printf.printf "%s%s\n%!" elapsed s
+    else Core.Std.Printf.printf "\027[K%s%s\n%!" elapsed s
   in
   let jput s =
     (if dont_emit_kill_line()
-    then Printf.printf "%s%s: %s\n%!" elapsed build_system_message_tag s
-    else Printf.printf "\027[K%s%s: %s\n%!" elapsed build_system_message_tag s);
+    then Core.Std.Printf.printf "%s%s: %s\n%!" elapsed build_system_message_tag s
+    else Core.Std.Printf.printf "\027[K%s%s: %s\n%!" elapsed build_system_message_tag s);
     redisplay_transient()
   in
 
@@ -373,21 +372,6 @@ let omake_style_logger config event =
       (Path.to_string path)
       (pretty_span duration))
 
-  | Event.Load_sexp_error (path,`loc (line,col),exn) ->
-    let where = Path.Rel.to_string (Path.Rel.dirname path) in
-    let file = Path.Rel.basename path in
-      (* hack on .cmx suffix for benefit of omake-server *)
-    let need = file ^ ".cmx" in
-    if verbose then (
-      put (sprintf "- build %s %s" where need);
-    );
-    put (sprintf"File \"%s\", line %d, characters %d-%d:" file line col col);
-    put (sprintf "Error: sexp_conversion failed\n%s" (Exn.to_string exn));
-    if verbose then (
-      put (sprintf "- exit %s %s" where need);
-    );
-    redisplay_transient()
-
   | Event.Errors_for_omake_server (path,errs) ->
     let where = Path.to_string (Path.dirname path) in
     let file = Path.basename path in
@@ -409,18 +393,14 @@ let omake_style_logger config event =
 
   | Event.Job_completed summary ->
     let (
-      {Job_start. where=_; need=_; stdout_expected; prog=_; args=_; uid=_},
+      {Job_start. where=_; need=_; prog=_; args=_; uid=_},
       {Job_finish. outcome; duration=_},
-      {Job_output. stdout; stderr}
+      {Job_output. stdout=_; stderr=_}
     ) = summary in
     let job_failed =
       match outcome with | `success -> false | `error _ -> true
     in
-    let has_stderr_or_unexpected_stdout =
-      (match stderr with [] -> false | _ -> true)
-      || (not stdout_expected && (match stdout with [] -> false | _ -> true))
-    in
-    let show_something = job_failed  || has_stderr_or_unexpected_stdout || verbose in
+    let show_something = job_failed || verbose in
     if show_something then (
       Job_summary.output_with summary ~put
     )
@@ -466,7 +446,7 @@ let to_log_full_logger log event =
 
 let make_log ~log_filename =
   let output = [Log.Output.file `Text ~filename:log_filename] in
-  let log = Log.create ~level:`Debug ~output in
+  let log = Log.create ~level:`Debug ~output ~on_error:`Raise in
   log
 
 

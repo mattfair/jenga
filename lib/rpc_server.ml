@@ -29,7 +29,7 @@ let make_periodic_pipe_writer span ~aborted ~f =
 let really_go ~root_dir progress =
   let progress_report_span = sec (0.3) in
   let progress_stream =
-    Rpc.Pipe_rpc.implement Rpc_intf.progress_stream
+    Rpc.Pipe_rpc.implement Rpc_intf.Progress_stream.rpc
       (fun (_ : Progress.Update.State.t) () ~aborted ->
          make_periodic_pipe_writer progress_report_span ~aborted ~f:(fun () ->
            Progress.snap progress
@@ -37,7 +37,7 @@ let really_go ~root_dir progress =
       )
   in
   let update_stream =
-    Rpc.Pipe_rpc.implement Rpc_intf.update_stream
+    Rpc.Pipe_rpc.implement Rpc_intf.Update_stream.rpc
       (fun state () ~aborted ->
          make_periodic_pipe_writer progress_report_span ~aborted ~f:(fun () ->
            Progress.updates progress state
@@ -63,7 +63,7 @@ let really_go ~root_dir progress =
     in
     start_server () >>= fun inet ->
     let port = Tcp.Server.listening_on inet in
-    (* write the server lock file - will shutdown it not possible *)
+    (* write the server lock file - will shutdown if not possible *)
     Server_lock.lock_running_server ~root_dir ~port
 
 let go config ~root_dir progress =

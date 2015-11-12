@@ -714,14 +714,15 @@ let dispatch = function
     dep [hack] [hack];
 
     let lib_core_mods =
-      [ "heart_interface"
+      [ "dlist"
       ; "heart"
-      ; "interface"
+      ; "heart_intf"
+      ; "heart_unit_tests"
       ; "ring"
+      ; "ring_unit_tests"
       ; "tenacious"
-      ; "test_hearts"
-      ; "test_ring"
-      ; "test_tenacious"
+      ; "tenacious_intf"
+      ; "tenacious_unit_tests"
       ; "weak_ref"
       ]
     in

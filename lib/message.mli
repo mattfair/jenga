@@ -3,7 +3,12 @@ open Core.Std
 open Async.Std
 
 module Q : sig
+  (** [shell_escape s] can be used as a part of bash command line to mean the word [s]
+      with any special characters escaped. *)
   val shell_escape : string -> string
+  (** [shell_escape_list l] constructs a part of bash command line with multiple
+      blank-separated words [l] on it with any special characters escaped *)
+  val shell_escape_list : string list -> string
 end
 
 module Job_start   : sig type t with bin_io end
@@ -24,7 +29,6 @@ val clear_transient : unit -> unit
 
 val job_started :
   need:string ->
-  stdout_expected:bool -> (* scanner job; output expected *)
   where:string ->
   prog:string ->
   args:string list ->
@@ -42,8 +46,6 @@ val repeat_job_summary : Job_summary.t -> unit
 
 val load_jenga_root : Path.t -> modules:string list -> unit
 val load_jenga_root_done : Path.t -> Time.Span.t -> unit
-
-val load_sexp_error : Path.Rel.t -> loc:(int*int) -> exn -> unit
 
 module Err : sig
   type t
